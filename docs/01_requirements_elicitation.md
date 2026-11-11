@@ -31,8 +31,32 @@
 10. **`REQ-010` (F / A-REQ):** Das System muss jede Konto-ID vor der Erstellung auf ein valides Format (exakt 8 Ziffern, ungleich `00000000`, bankweit eindeutig) prüfen und ungültige IDs mit einer Fehlermeldung ablehnen.
 11. **`REQ-011` (NF / A-REQ):** Das System darf keine dauerhafte Datenbank-Persistenz nutzen; die Datenhaltung muss über ein gemocktes Datenbank-Interface isoliert und testbar sein.
 12. **`REQ-012` (NF / A-REQ):** Das System muss ein einfaches Befehlszeilen-Interface (CLI-Frontend) bereitstellen, über das alle Kernfunktionen interaktiv ausgeführt werden können.
+13. **`REQ-013` (F / A-REQ):** Das System muss jeden Kunden über eine eindeutige Kunden-ID verwalten, wobei ein Kunde mehreren Konten zugeordnet sein kann.
+14. **`REQ-014` (F):** Das System muss Transaktionen (Ein- und Auszahlungen) mit einem Betrag von exakt $0{,}00\text{ EUR}$ als ungültig ablehnen.
+15. **`REQ-015` (F / A-REQ):** Das System muss Operationen auf nicht existierende Konto-IDs abfangen und mit einer definierten Fehlermeldung (`AccountNotFoundException`) quittieren.
+
 
 ---
-## 1.3 SQE Actions
-* **Durchgeführte Aktion:**
-* **Ergebnis / Beseitigte Fehler:**
+## 1.3 SQE-Maßnahmen: Requirements Inspection & Verification
+
+In Phase 1 wurde als primäre SQE-Maßnahme eine formelle **Requirements Inspection** (angelehnt an das Fagan-Inspection-Verfahren) auf Basis der ursprünglichen Aufgabenstellung durchgeführt. Ziel war es, Unvollständigkeiten, Mehrdeutigkeiten und fehlende Testbarkeiten vor dem Architekturentwurf frühzeitig zu identifizieren und zu beheben (Early Testing Principle).
+
+### 1.3.1 Durchgeführte SQE-Aktion
+1. **Methode:** Formelles Peer-Review / Inspection der initialen Anforderungen unter Verwendung einer Prüfliste nach **ISO 29148** Kriterien (Prüfkriterien: *Unambiguous*, *Complete*, *Consistent*, *Verifiable*, *Feasible*).
+2. **Teilnehmer & Rollen:** Gesamtes Entwicklungsteam (Rollen: Moderator, Reader, Inspector). Die finale Verantwortung und Ownership für die Requirements-Anpassungen verblieb beim Requirements Engineer / Product Manager.
+3. **Prüfgegenstand:** Requirements Baseline v0.1 (Gegenüberstellung der ungenauen Initial-Spezifikation aus der Aufgabenstellung mit der finalen SMART-Spezifikation).
+
+### 1.3.2 Inspection Protocol (Review-Protokoll)
+
+| Defect-ID | Relevante Anforderung (Ziel-REQ) | Befund / Identifizierter Mangel (aus der Ursprungs-Aufgabenstellung) | Schweregrad | Ergriffene Korrekturmaßnahme | Auswirkung auf Finale Requirement Baseline |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `DEF-REQ-01` | `REQ-005`, `REQ-006` | **Mehrdeutigkeit in der Angabe:** Die ursprüngliche Anforderung *"deposit/withdraw money (euros and cents, no negative money)"* ließ offen, wie exakt $0{,}00\text{ EUR}$ behandelt wird und wie Rundungsfehler vermieden werden. | Hoch | Festlegung auf Festkomma-Arithmetik (Cents als Ganzzahlen/Decimal) und strikte Validierung auf Beträge $> \text{0.00 EUR}$. | `REQ-005` & `REQ-006` wurden um Genauigkeits- und Vorzeichenklausel erweitert. |
+| `DEF-REQ-02` | `REQ-004` | **Unvollständigkeit in der Angabe:** Die ursprüngliche Anforderung *"close account"* enthielt keine Regelung für Konten mit verbleibendem Guthaben oder negativen Salden. | Mittel | Einführung einer strikten Pre-Condition: Ein Konto darf ausschließlich bei einem exakten Kontostand von $0{,}00\text{ EUR}$ geschlossen werden. | `REQ-004` wurde um die Bedingung `Balance == 0.00 EUR` ergänzt (sowie `REQ-014`). |
+| `DEF-REQ-03` | `REQ-007` | **Fehlende Spezifikation in der Angabe:** Die Anforderung *"overdraft limit may be granted for special customers"* definierte weder das Limit noch den Überziehungsmechanismus. | Hoch | Definition eines konfigurierbaren Overdraft-Attributs pro Spezialkonto und Strukturierung als architekturrelevante Anforderung (**A-REQ**). | `REQ-007` wurde als **A-REQ** neu präzisiert. |
+| `DEF-REQ-04` | `REQ-010` | **Nicht-Testbarkeit in der Angabe:** Die Angabe *"Account ID: 8 digits, not 00000000, unique"* spezifizierte kein Verhalten bei ungültigen Zeichen, Längen oder Duplikaten. | Mittel | Exakte Definition aller Format- und Validierungsregeln als Voraussetzung für automatisierte Unit-Tests. | `REQ-010` wurde SMART-konform präzisiert. |
+| `DEF-REQ-05` | `REQ-011`, `REQ-012` | **Fehlende NFA-Klassifizierung in der Angabe:** Die Vorgaben *"no persistency / DB mock"* und *"simple CLI frontend"* wurden nur als "non-requirements" geführt. | Hoch | Re-Klassifizierung dieser Randbedingungen zu **A-REQs**, da sie das Repository-Pattern und die Entkopplung der Schichtenarchitektur erzwingen. | `REQ-011` und `REQ-012` wurden explizit als **A-REQ** markiert. |
+
+### 1.3.3 Ergebnis & Outcome der SQE-Maßnahme
+
+1. **Verbesserte Testbarkeit:** Alle 15 finalen Anforderungen erfüllen nun die **ISO 29148** Qualitätskriterien und bilden eine eindeutige Basis..
+2. **Erfüllung der Definition of Entry (Architektur):**
